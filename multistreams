@@ -1,0 +1,299 @@
+MainActivity.kt:
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.findNavController
+import androidx.navigation.ui.setupWithNavController
+import kotlinx.android.synthetic.main.activity_main.*
+
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val navController = findNavController(R.id.fragment_container)
+        bottomNavigationView.setupWithNavController(navController)
+    }
+}
+
+activity_main.xml:
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomNavigationView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:menu="@menu/bottom_navigation_menu" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+bottom_navigation_menu.xml:
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/loginFragment"
+        android:title="Login" />
+    <item
+        android:id="@+id/registrationFragment"
+        android:title="Registration" />
+    <item
+        android:id="@+id/homeFragment"
+        android:title="Home" />
+    <item
+        android:id="@+id/profileFragment"
+        android:title="Profile" />
+</menu>
+
+navigation_controler.xml:
+
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation_graph"
+    app:startDestination="@id/loginFragment">
+
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.example.app.LoginFragment"
+        android:label="fragment_login"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_registrationFragment"
+            app:destination="@id/registrationFragment" />
+        <action
+            android:id="@+id/action_loginFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registrationFragment"
+        android:name="com.example.app.RegistrationFragment"
+        android:label="fragment_registration"
+        tools:layout="@layout/fragment_registration" />
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.app.HomeFragment"
+        android:label="fragment_home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.app.ProfileFragment"
+        android:label="fragment_profile"
+        tools:layout="@layout/fragment_profile" />
+
+</navigation>
+
+LoginFragment.kt:
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import kotlinx.android.synthetic.main.fragment_login.*
+
+class LoginFragment : Fragment() {
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_login, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        loginButton.setOnClickListener {
+            val name = nameEditText.text.toString()
+            val phoneNumber = phoneNumberEditText.text.toString()
+            val dateOfBirth = dateOfBirthEditText.text.toString()
+            val gender = genderEditText.text.toString()
+
+            val loggedIn = AuthenticationManager.login(name, phoneNumber, dateOfBirth, gender)
+            if (loggedIn) {
+                navigateToHomeFragment()
+            }
+        }
+
+        registerButton.setOnClickListener {
+            navigateToRegistrationFragment()
+        }
+    }
+
+    private fun navigateToHomeFragment() {
+        val action = LoginFragmentDirections.actionLoginFragmentToHomeFragment()
+        findNavController().navigate(action)
+    }
+
+    private fun navigateToRegistrationFragment() {
+        val action =
+            LoginFragmentDirections.actionLoginFragmentToRegistrationFragment()
+        findNavController().navigate(action)
+    }
+}
+
+fragment_login.xml:
+
+class ProfileFragment : Fragment() {
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_profile, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val currentUser = AuthenticationManager.getCurrentUser()
+
+        if (currentUser != null) {
+            // Отображение данных текущего пользователя в профиле
+            nameTextView.text = currentUser.name
+            phoneNumberTextView.text = currentUser.phoneNumber
+            dateOfBirthTextView.text = currentUser.dateOfBirth
+            genderTextView.text = currentUser.gender
+
+            // Обработка выхода из аккаунта
+            logoutButton.setOnClickListener {
+                AuthenticationManager.logout()
+                // Переход к экрану авторизации или на главный экран
+            }
+        }
+    }
+}
+
+RegistrationFragment.kt:
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import kotlinx.android.synthetic.main.fragment_registration.*
+
+class RegistrationFragment : Fragment() {
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_registration, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        registerButton.setOnClickListener {
+            val name = nameEditText.text.toString()
+            val phoneNumber = phoneNumberEditText.text.toString()
+            val dateOfBirth = dateOfBirthEditText.text.toString()
+            val gender = genderEditText.text.toString()
+
+            val registered = AuthenticationManager.register(name, phoneNumber, dateOfBirth, gender)
+            if (registered) {
+                navigateToHomeFragment()
+            }
+        }
+    }
+
+    private fun navigateToHomeFragment() {
+        val action = RegistrationFragmentDirections.actionRegistrationFragmentToHomeFragment()
+        findNavController().navigate(action)
+    }
+}
+
+user.kt
+data class User(
+    val name: String,
+    val phoneNumber: String,
+    val dateOfBirth: String,
+    val gender: String,
+    val token: String
+)
+
+manage.kt:
+
+object UserManager {
+    private const val USER_FILE_NAME = "user_data.json"
+
+    fun saveUser(user: User, context: Context) {
+        val json = Gson().toJson(user)
+        context.openFileOutput(USER_FILE_NAME, Context.MODE_PRIVATE).use {
+            it.write(json.toByteArray())
+        }
+    }
+
+    fun loadUser(context: Context): User? {
+        return try {
+            val fileInputStream = context.openFileInput(USER_FILE_NAME)
+            val inputStreamReader = InputStreamReader(fileInputStream)
+            val bufferedReader = BufferedReader(inputStreamReader)
+            val json = bufferedReader.use(BufferedReader::readText)
+            Gson().fromJson(json, User::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+AuthenticationManager.kt:
+
+object AuthenticationManager {
+    private var currentUser: User? = null
+
+    fun login(name: String, phoneNumber: String, dateOfBirth: String, gender: String): Boolean {
+        // Здесь происходит проверка введенных данных и, если они корректны,
+        // создается объект User и сохраняется в currentUser
+        currentUser = User(name, phoneNumber, dateOfBirth, gender, generateToken())
+        return true // Возвращает true в случае успешной авторизации
+    }
+
+    fun register(name: String, phoneNumber: String, dateOfBirth: String, gender: String): Boolean {
+        // Здесь происходит добавление нового пользователя в базу данных или в локальное хранилище
+        // в зависимости от используемого метода хранения данных
+        currentUser = User(name, phoneNumber, dateOfBirth, gender, generateToken())
+        return true // Возвращает true в случае успешной регистрации
+    }
+
+    fun getCurrentUser(): User? {
+        return currentUser
+    }
+
+    fun logout() {
+        // Очистка данных о текущем пользователе при выходе
+        currentUser = null
+    }
+
+    private fun generateToken(): String {
+        // Генерация токена для авторизации
+        return "some_generated_token" // Замените на вашу реализацию
+    }
+}
